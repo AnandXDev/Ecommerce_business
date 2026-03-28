@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dropship-backend
+  namespace: dropship
+  labels:
+    app: dropship-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dropship-backend
+  template:
+    metadata:
+      labels:
+        app: dropship-backend
+    spec:
+      containers:
+      - name: backend
+        image: dropship-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "5000"
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: MONGODB_URI
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: JWT_SECRET
+        - name: JWT_EXPIRE
+          value: "7d"
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: GOOGLE_CLIENT_SECRET
+        - name: EMAIL_HOST
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: EMAIL_HOST
+        - name: EMAIL_PORT
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: EMAIL_PORT
+        - name: EMAIL_USER
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: EMAIL_USER
+        - name: EMAIL_PASS
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: EMAIL_PASS
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: STRIPE_SECRET_KEY
+        - name: ALIEXPRESS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: ALIEXPRESS_API_KEY
+        - name: ALIEXPRESS_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dropship-secrets
+              key: ALIEXPRESS_API_SECRET
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: uploads-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: dropship
+spec:
+  selector:
+    app: dropship-backend
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: dropship
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dropship-backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads-pvc
+  namespace: dropship
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd

@@ -1,0 +1,48 @@
+"use client";
+
+import { Button } from '@/components/ui/Button';
+import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+
+interface SectionHeaderProps {
+  title: string;
+  subtitle?: string;
+  viewAllHref?: string;
+  viewAllText?: string;
+  badge?: string;
+}
+
+export function SectionHeader({ 
+  title, 
+  subtitle, 
+  viewAllHref, 
+  viewAllText = "View All",
+  badge 
+}: SectionHeaderProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl lg:text-3xl font-bold text-foreground">{title}</h2>
+          {badge && (
+            <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+              {badge}
+            </span>
+          )}
+        </div>
+        {subtitle && (
+          <p className="text-muted-foreground text-lg">{subtitle}</p>
+        )}
+      </div>
+      
+      {viewAllHref && (
+        <Button variant="outline" size="sm" asChild>
+          <Link href={viewAllHref} className="inline-flex items-center">
+            {viewAllText}
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+}
