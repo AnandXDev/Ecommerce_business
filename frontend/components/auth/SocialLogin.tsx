@@ -4,6 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/hooks/useAuth";
+import { jwtDecode } from "jwt-decode";
+
+// interface GoogleJwtPayload {
+//   sub: string;
+//   email: string;
+//   name: string;
+//   picture: string;
+// }
+interface GoogleLoginPayload {
+  token: string;
+}
+
 
 export function SocialLogin() {
   const [isLoading, setIsLoading] = useState<{ [key: string]: boolean }>({});
@@ -52,16 +64,17 @@ export function SocialLogin() {
           />
         </svg>
 
-        <GoogleLogin
-          onSuccess={(credentialResponse) => {
-            console.log("Google Success:", credentialResponse);
+     
 
-            googleLogin(credentialResponse); // 👈 THIS CALLS YOUR API
-          }}
-          onError={() => {
-            console.log("Google Login Failed");
-          }}
-        />
+<GoogleLogin
+  onSuccess={(credentialResponse) => {
+    if (credentialResponse.credential) {
+      googleLogin({
+        token: credentialResponse.credential, // ✅ correct
+      });
+    }
+  }}
+/>
       </Button>
 
       <Button

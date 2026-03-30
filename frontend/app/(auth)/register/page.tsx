@@ -1,10 +1,20 @@
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { Metadata } from 'next';
+import axios from 'axios';
 
 export const metadata: Metadata = {
   title: 'Create Account - LuxeCart',
   description: 'Create your LuxeCart account to start shopping, track orders, and get personalized recommendations.',
   keywords: ['register', 'sign up', 'create account', 'ecommerce', 'online shopping'],
+};
+
+const sendOtp = async (email: string) => {
+  try {
+    const res = await axios.post('/api/auth/send-otp', { email });
+    alert(res.data.message);
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 export default function RegisterPage() {

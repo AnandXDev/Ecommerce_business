@@ -46,14 +46,14 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: user.firstName + ' ' + user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
-        address: user.address || '',
-        city: user.city || '',
-        state: user.state || '',
-        zipCode: user.zipCode || '',
-        country: user.country || ''
+        address: user.addresses[0]?.street || '',
+        city: user.addresses[0]?.city || '',
+        state: user.addresses[0]?.state || '',
+        zipCode: user.addresses[0]?.zipCode || '',
+        country: user.addresses[0]?.country || ''
       });
     }
   }, [user]);
@@ -93,14 +93,14 @@ export default function ProfilePage() {
   const handleCancel = () => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: user.firstName + ' ' + user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
-        address: user.address || '',
-        city: user.city || '',
-        state: user.state || '',
-        zipCode: user.zipCode || '',
-        country: user.country || ''
+        address: user.addresses[0]?.street || '',
+        city: user.addresses[0]?.city || '',
+        state: user.addresses[0]?.state || '',
+        zipCode: user.addresses[0]?.zipCode || '',
+        country: user.addresses[0]?.country || ''
       });
     }
     setIsEditing(false);
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                   <div className="relative">
                     <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
                       <span className="text-2xl font-bold text-white">
-                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        {user?.firstName?.charAt(0).toUpperCase() || 'U'}
                       </span>
                     </div>
                     {isEditing && (
@@ -246,7 +246,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">
-                      {user?.name || 'User'}
+                      {user?.firstName || 'User'}
                     </h3>
                     <p className="text-gray-600">{user?.email}</p>
                     <div className="flex items-center mt-2">

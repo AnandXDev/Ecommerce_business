@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { ProductCard } from '@/components/product/ProductCard';
-import { FilterSidebar } from '@/components/product/FilterSidebar';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Loading } from '@/components/ui/Loading';
-import { useProducts, useCategories } from '@/hooks/useData';
-import { Filter, X, Grid, List } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { ProductCard } from "@/components/product/ProductCard";
+import { FilterSidebar } from "@/components/product/FilterSidebar";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Loading } from "@/components/ui/Loading";
+import { useProducts, useCategories } from "@/hooks/useData";
+import { Filter, X, Grid, List } from "lucide-react";
+import { motion } from "framer-motion";
 type CategoryType = {
   _id?: string;
   name?: string;
@@ -21,63 +21,103 @@ type Product = {
   name: string;
   category?: CategoryType | string;
   categorySlug?: string; // ✅ ADD THIS
+  pricing?: {
+    basePrice: number;
+  };
+  rating?: {
+    average: number;
+  };
+  brand?: {
+    name: string;
+  };
+  images?: {
+    url: string;
+    alt: string;
+  }[];
 };
+
+type FilterType = {
+  category: string;
+  priceRange: [number, number]; // 👈 FIX HERE
+  rating: number;
+  sortBy: string;
+  brand: string;
+};
+
+type Category = {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  parentId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  productCount: number;
+}
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get('category');
-  const [tempPriceRange, setTempPriceRange] = useState([0, 1000]);
+  const initialCategory = searchParams.get("category");
+  const [tempPriceRange, setTempPriceRange] = useState<[number, number]>([0, 1000]);
   
-  const [filters, setFilters] = useState({
-    category: initialCategory || '',
+
+  const [filters, setFilters] = useState<FilterType>({
+    category: initialCategory || "",
     priceRange: [0, 1000],
     rating: 0,
-    sortBy: 'featured',
-    brand: ''
+    sortBy: "featured",
+    brand: "",
   });
 
- useEffect(() => {
-  const category = searchParams.get('category');
+  useEffect(() => {
+    const category = searchParams.get("category");
 
-  setFilters((prev) => ({
-    ...prev,
-    category: category || ''
-  }));
-}, [searchParams.get('category')]);
+    setFilters((prev) => ({
+      ...prev,
+      category: category || "",
+    }));
+  }, [searchParams.get("category")]);
 
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { products, loadingProducts, productsError, refreshProducts } = useProducts();
+  const { products, loadingProducts, productsError, refreshProducts } =
+    useProducts();
   const { categories } = useCategories();
-  
+
   const loading = loadingProducts;
   const error = productsError;
 
   // Mock brands for filters (since we don't have brands in our data context yet)
   const brands = [
-    { name: 'Nike', count: 15 },
-    { name: 'Apple', count: 12 },
-    { name: 'Samsung', count: 10 },
-    { name: 'Sony', count: 8 }
+    { name: "Nike", count: 15 },
+    { name: "Apple", count: 12 },
+    { name: "Samsung", count: 10 },
+    { name: "Sony", count: 8 },
   ];
+
+  const clearFilters = () => {
+    setFilters({
+      category: "",
+      priceRange: [0, 1000],
+      rating: 0,
+      sortBy: "featured",
+      brand: "",
+    });
+  };
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
   };
 
-  const clearFilters = () => {
-    setFilters({
-      category: '',
-      priceRange: [0, 1000],
-      rating: 0,
-      sortBy: 'featured',
-      brand: ''
-    });
-  };
-
-  const hasActiveFilters = filters.category || filters.rating > 0 || 
-    filters.priceRange[0] > 0 || filters.priceRange[1] < 1000 || filters.brand;
+  const hasActiveFilters =
+    filters.category ||
+    filters.rating > 0 ||
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 1000 ||
+    filters.brand;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -85,16 +125,16 @@ export default function ProductsPage() {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
-      }
-    }
+        ease: "easeOut",
+      },
+    },
   };
 
   const itemVariants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       y: 30,
-      scale: 0.9
+      scale: 0.9,
     },
     visible: {
       opacity: 1,
@@ -102,9 +142,9 @@ export default function ProductsPage() {
       scale: 1,
       transition: {
         duration: 0.5,
-        ease: "easeOut"
-      }
-    }
+        ease: "easeOut",
+      },
+    },
   };
 
   if (loading && products.length === 0) {
@@ -115,11 +155,14 @@ export default function ProductsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Products</h1>
             <p className="text-gray-600">Discover our amazing products</p>
           </div>
-          
+
           {/* Loading skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div
+                key={i}
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
+              >
                 <div className="aspect-square bg-gray-200 animate-pulse"></div>
                 <div className="p-4">
                   <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
@@ -134,80 +177,82 @@ export default function ProductsPage() {
   }
 
   const sortOptions = [
-  { label: "Featured", value: "featured" },
-  { label: "Price: Low to High", value: "price-low-high" },
-  { label: "Price: High to Low", value: "price-high-low" },
-  { label: "Highest Rated", value: "rating" },
-  { label: "Newest First", value: "newest" },
-  { label: "Name: A-Z", value: "name" }
-];
+    { label: "Featured", value: "featured" },
+    { label: "Price: Low to High", value: "price-low-high" },
+    { label: "Price: High to Low", value: "price-high-low" },
+    { label: "Highest Rated", value: "rating" },
+    { label: "Newest First", value: "newest" },
+    { label: "Name: A-Z", value: "name" },
+  ];
 
-const applyPrice = () => {
-  setFilters((prev) => ({
-    ...prev,
-    priceRange: tempPriceRange
-  }));
-};
+  const applyPrice = () => {
+    setFilters((prev) => ({
+      ...prev,
+      priceRange: tempPriceRange,
+    }));
+  };
   const filteredProducts = products
-  .filter((product) => {
-   const productCategory =
-  product.categorySlug ||
-  (typeof product.category === "object"
-    ? product.category?.slug
-    : product.category) ||
-  "";
+    .filter((product) => {
+      const productCategory =
+        product.categorySlug ||
+        (typeof product.category === "object"
+          ? product.category?.slug
+          : product.category) ||
+        "";
 
-    // Category
-    if (filters.category && productCategory !== filters.category) {
-      return false;
-    }
+      // Category
+      if (filters.category && productCategory !== filters.category) {
+        return false;
+      }
 
-    // Price
-    if (
-      product.pricing.basePrice < filters.priceRange[0] ||
-      product.pricing.basePrice > filters.priceRange[1]
-    ) {
-      return false;
-    }
+      // Price
+      if (
+        (product.pricing.basePrice || 0) < filters.priceRange[0] ||
+        (product.pricing.basePrice || 0) > filters.priceRange[1]
+      ) {
+        return false;
+      }
 
-    // Rating
-    
-   if (filters.rating && (product.rating?.average || 0) < filters.rating) {
-  return false;
-}
-    // Brand
-    const productBrand =
-  product.brand?.name?.toLowerCase() ||
-  product.brand?.toLowerCase() ||
-  "";
+      // Rating
 
-if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
-  return false;
-}
+      if (filters.rating && (product.rating?.average || 0) < filters.rating) {
+        return false;
+      }
+      // Brand
+      const productBrand =
+        product.brand?.name?.toLowerCase() ||
+        product.brand?.toLowerCase() ||
+        "";
 
-    return true;
-  })
-  .sort((a, b) => {
-    switch (filters.sortBy) {
-      case "price-low-high":
-        return a.pricing.basePrice - b.pricing.basePrice;
+      if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
+        return false;
+      }
 
-      case "price-high-low":
-        return b.pricing.basePrice - a.pricing.basePrice;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (filters.sortBy) {
+        case "price-low-high":
+          return a.pricing.basePrice - b.pricing.basePrice;
 
-      case "rating":
-        return (b.rating?.average || 0) - (a.rating?.average || 0);
+        case "price-high-low":
+          return b.pricing.basePrice - a.pricing.basePrice;
 
-      case "newest":
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "rating":
+          return (b.rating?.average || 0) - (a.rating?.average || 0);
 
-      case "name":
-        return a.name.localeCompare(b.name);
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
 
-      default:
-        return 0; // featured (default order)
-    }
-  });
+        case "name":
+          return a.name.localeCompare(b.name);
+
+        default:
+          return 0; // featured (default order)
+      }
+    });
   return (
     <motion.div
       variants={containerVariants}
@@ -218,9 +263,7 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
       <div className="container-custom py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Products
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Products</h1>
           <p className="text-gray-600 mb-6">
             Discover our curated collection of premium products
           </p>
@@ -251,7 +294,8 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
                   className="text-red-600 hover:text-red-700"
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Clear Filters {hasActiveFilters && (
+                  Clear Filters{" "}
+                  {hasActiveFilters && (
                     <Badge variant="secondary" className="ml-2 text-xs">
                       Active
                     </Badge>
@@ -265,16 +309,16 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
                 {filteredProducts.length} products found
               </span>
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                variant={viewMode === "grid" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode("grid")}
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
+                variant={viewMode === "list" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -297,7 +341,10 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
           {/* Mobile Filter Modal */}
           {showFilters && (
             <div className="fixed inset-0 z-50 lg:hidden">
-              <div className="fixed inset-0 bg-black/50" onClick={() => setShowFilters(false)} />
+              <div
+                className="fixed inset-0 bg-black/50"
+                onClick={() => setShowFilters(false)}
+              />
               <div className="fixed left-0 top-0 h-full w-80 bg-white z-10">
                 <FilterSidebar
                   filters={filters}
@@ -317,7 +364,9 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
             {error ? (
               <div className="text-center py-12">
                 <p className="text-red-600 mb-4">{error}</p>
-                <Button onClick={() => window.location.reload()}>Try Again</Button>
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
               </div>
             ) : products.length === 0 ? (
               <div className="text-center py-12">
@@ -326,7 +375,9 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
                     <Filter className="h-8 w-8 text-gray-400" />
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  No products found
+                </h3>
                 <p className="text-gray-600 mb-4">
                   Try adjusting your filters or search terms
                 </p>
@@ -337,27 +388,31 @@ if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
                 variants={{
                   visible: {
                     transition: {
-                      staggerChildren: 0.1
-                    }
-                  }
+                      staggerChildren: 0.1,
+                    },
+                  },
                 }}
                 initial="hidden"
                 animate="visible"
                 className={
-                  viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                    : 'space-y-4'
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                    : "space-y-4"
                 }
               >
                 {filteredProducts.map((product, index) => (
                   <motion.div
-                    key={product._id }
+                    key={product._id}
                     variants={itemVariants}
-                    className={viewMode === 'list' ? 'bg-white rounded-lg shadow-sm p-4' : ''}
+                    className={
+                      viewMode === "list"
+                        ? "bg-white rounded-lg shadow-sm p-4"
+                        : ""
+                    }
                   >
-                    <ProductCard 
-                      product={product} 
-                      className={viewMode === 'list' ? 'flex-row' : ''}
+                    <ProductCard
+                      product={product}
+                      className={viewMode === "list" ? "flex-row" : ""}
                     />
                   </motion.div>
                 ))}

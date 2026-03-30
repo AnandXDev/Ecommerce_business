@@ -16,7 +16,7 @@ interface FilterSidebarProps {
   };
   onFilterChange: (filters: any) => void;
   onClearFilters: () => void;
-  categories?: Array<{ _id: string; name: string; productCount: number }>;
+  categories?: Array<{ _id: string; name: string; productCount: number; slug: string }>;
   brands?: Array<{ name: string; count: number }>;
   isOpen?: boolean;
   onClose?: () => void;

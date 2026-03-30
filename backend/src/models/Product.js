@@ -182,6 +182,20 @@ const productSchema = new mongoose.Schema(
         default: 0,
       },
     },
+    inventoryLogs: [
+  {
+    type: {
+      type: String,
+      enum: ["ADD", "REMOVE", "SALE", "RETURN"]
+    },
+    quantity: Number,
+    note: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }
+],
     shipping: {
       weight: {
         type: Number,

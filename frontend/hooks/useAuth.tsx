@@ -37,21 +37,25 @@ interface User {
   createdAt: string;
   lastLogin: string;
 }
-
+type RegisterResponse = {
+  status: string;
+  message: string;
+};
+type UpdatePasswordType = {
+  currentPassword: string;
+  newPassword: string;
+};
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
   registrationSuccess: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
-  googleLogin: (googleUser: GoogleUser) => Promise<void>;
+  register: (userData: RegisterData) => Promise<RegisterResponse>;
+  googleLogin: (data: GoogleLoginPayload) => Promise<void>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
-  updatePassword: (
-    currentPassword: string,
-    newPassword: string,
-  ) => Promise<void>;
+  updatePassword: (passwordData: UpdatePasswordType) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
@@ -72,6 +76,8 @@ interface RegisterData {
     marketing: boolean;
     theme: "light" | "dark" | "system";
   };
+  status?: string;
+  message?: string;
 }
 
 interface GoogleUser {
@@ -80,7 +86,12 @@ interface GoogleUser {
   firstName?: string;
   lastName?: string;
   picture?: string;
+  token: string;
 }
+interface GoogleLoginPayload {
+  token: string;
+}
+
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,11 +216,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Set registration success state
         setRegistrationSuccess(true);
 
-        // redirect user to verification page
-        // router.push("/verify-email");
+        
+        router.push("/verify-email");
       }
+       return response.data; // ✅ THIS LINE IS MISSING
     } catch (error: any) {
-      console.log("REGISTER ERROR:", error.response);
+      
+      console.log("FULL ERROR:", error);
+console.log("ERROR DATA:", error?.response?.data);
 
       const errorMessage =
         error?.response?.data?.message ||
@@ -217,40 +231,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "Registration failed";
 
       setError(errorMessage);
-      throw new Error(errorMessage);
+      return null;
     } finally {
       setLoading(false);
     }
   };
-  const googleLogin = async (googleUser: any) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const googleLogin = async (data: GoogleLoginPayload) => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      // ✅ Send correct data (IMPORTANT)
-      const response = await axios.post(`${API_URL}/api/auth/google`, {
-        token: googleUser.credential,
-      });
-
-      // ✅ Safe response handling
-      if (response.data?.status === "success") {
-        const user = response.data.data.user;
-        const token = response.data.data.token; // 👈 FIX
-
-        setAuthData(user, token);
-        router.push("/");
+    // ✅ Send token directly (clean contract)
+    const response = await axios.post(
+      `${API_URL}/api/auth/google`,
+      data,
+      {
+        withCredentials: true, // 🔥 important for cookies
       }
-    } catch (error: any) {
-      console.error("🔥 Google Login Error:", error);
+    );
 
-      const errorMessage =
-        error.response?.data?.message || error.message || "Google login failed";
+    // ✅ Safe response handling
+    if (response.data?.status === "success") {
+      const user = response.data.data.user;
+      const token = response.data.data.token;
 
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      setAuthData(user, token);
+
+      router.push("/");
+    } else {
+      throw new Error(response.data?.message || "Google login failed");
     }
-  };
+  } catch (error: any) {
+    console.error("🔥 Google Login Error:", error);
+
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Google login failed";
+
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
  const logout = async () => {
   await axios.post('/api/auth/logout', {
@@ -292,10 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updatePassword = async (
-    currentPassword: string,
-    newPassword: string,
-  ) => {
+  const updatePassword = async ({ currentPassword, newPassword }: UpdatePasswordType) => {
     try {
       setLoading(true);
       setError(null);

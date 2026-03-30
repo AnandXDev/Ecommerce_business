@@ -3,6 +3,7 @@ const router = express.Router();
 
 // Import controllers
 const authController = require('../controllers/authController');
+const { sendOTP, verifyOTP } = require('../controllers/authController');
 
 // Import validation
 const {
@@ -21,6 +22,10 @@ const { protect, verifyEmailToken, verifyResetToken } = require('../middleware/a
 router.post('/register', registerValidator, authController.signup);
 router.post('/login', loginValidator, authController.login);
 router.post('/logout', authController.logout);
+router.get('/verify-email/', authController.verifyEmail);
+router.post('/send-otp', sendOTP);
+router.post('/verify-otp', verifyOTP);
+// router.post('/google-login', authController.googleLogin);
 // router.post('/google', authController.googleAuth);
 // router.post('/forgot-password', forgotPasswordValidator, authController.forgotPassword);
 // router.patch('/reset-password/:token', resetPasswordValidator, authController.resetPassword);

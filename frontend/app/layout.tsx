@@ -10,6 +10,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster, ToasterProvider } from '@/components/ui/toaster';
 import { Toaster as HotToaster } from 'react-hot-toast';
+
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });

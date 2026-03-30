@@ -1,18 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation"; // ✅ CORRECT
 import { useAuth } from '@/hooks/useAuth';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Separator } from '@/components/ui/Separator';
 import { SocialLogin } from './SocialLogin';
 import { RegistrationSuccess } from './RegistrationSuccess';
+
 
 // Form validation schema
 const registerSchema = z.object({
@@ -52,30 +54,39 @@ export function RegisterForm() {
     }
   });
 
+  
+
   const onSubmit = async (data: RegisterFormData) => {
-    try {
-      setIsLoading(true);
-      clearError();
+    
+  try {
+    setIsLoading(true);
+    clearError();
+
+    const { confirmPassword, agreeToTerms, subscribeNewsletter, ...userData } = data;
+
+    const registrationData = {
+      ...userData,
+      preferences: {
+        newsletter: subscribeNewsletter,
+        marketing: false,
+        theme: 'system' as const
+      }
+    };
+
       
-      const { confirmPassword, agreeToTerms, subscribeNewsletter, ...userData } = data;
-      const registrationData = {
-        ...userData,
-        preferences: {
-          newsletter: subscribeNewsletter,
-          marketing: false,
-          theme: 'system' as const
-        }
-      };
-      
-      await registerUser(registrationData);
-      
-      // Redirect will be handled by the auth hook
-    } catch (error) {
-      // Error is already handled by the auth hook
-    } finally {
-      setIsLoading(false);
+
+    // ✅ Redirect AFTER successful signup
+    const response = await registerUser(registrationData);
+
+    if (response.status === 'success') {
+      router.push(`/verify-email?email=${data.email}`);
     }
-  };
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="w-full max-w-md mx-auto">

@@ -71,7 +71,7 @@ export function HeroBanner({
       title: "Summer Collection",
       subtitle: "Up to 50% Off",
       image:
-        "https://images.squarespace-cdn.com/content/v1/51ce36b1e4b05d425c820ea0/8a45ddab-2927-4c62-9bb0-6fead69daf3b/Hero-Shot-Fragrance-Cologne-cosmetic-bottle-photography-south-bend-Indiana-Commercial-Advertising-Product-and-Still-Life-Photographer-Brian-Rodgers-Jr-Digital-Art-That-Rocks-product-photography-los-angeles.jpg",
+        "https://storage.googleapis.com/bitr-cdn/wp-content/uploads/2024/06/asics-superblast-2-feature.jpg",
       gradient: "from-orange-500/40 to-transparent",
     },
     {
@@ -79,7 +79,7 @@ export function HeroBanner({
       title: "Premium Tech",
       subtitle: "The Future is Here",
       image:
-        "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070",
+        "https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6462/6462658ld.jpg",
       gradient: "from-blue-600/40 to-transparent",
     },
     {
@@ -87,7 +87,7 @@ export function HeroBanner({
       title: "Urban Style",
       subtitle: "Streetwear Essentials",
       image:
-        "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070",
+        "https://i.ytimg.com/vi/8nBuO4bX52U/maxresdefault.jpg",
       gradient: "from-purple-600/40 to-transparent",
     },
     {

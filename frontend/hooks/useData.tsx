@@ -20,6 +20,10 @@ export interface Product {
   slug: string;
   description: string;
   images: Array<{ url: string; alt: string }>;
+  brand: {
+    name: string;
+    toLowerCase: () => string;
+  };
   pricing: {
     basePrice: number;
     comparePrice?: number | null;
@@ -32,6 +36,7 @@ export interface Product {
     name: string;
     slug: string;
   };
+  categorySlug: string;
   rating: {
     average: number;
     count: number;
@@ -65,14 +70,23 @@ export interface Order {
     productId: string;
     name: string;
     images: Array<{ url: string; alt: string }>;
+    productSnapshot: {
+      name: string;
+      images: string[];
+    };
+    pricing: {
+      total: number;
+    };
     quantity: number;
     price: number;
     subtotal: number;
   }>;
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
+  pricing: {
+    subtotal: number;
+    shipping: number;
+    tax: number;
+    total: number;
+  };
   shippingAddress: {
     fullName: string;
     address: string;
@@ -100,6 +114,7 @@ export interface Category {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  productCount: number;
 }
 
 interface DataContextType {

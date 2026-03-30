@@ -111,6 +111,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/categories', categoryRoutes);
 
+
 // 404 handler
 app.use(notFound);
 

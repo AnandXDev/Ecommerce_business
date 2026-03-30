@@ -111,6 +111,10 @@ export default function SettingsPage() {
   };
 
   const handlePasswordUpdate = async () => {
+    if(!passwordData.currentPassword){
+      toast.error('Current password is required');
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Passwords do not match');
       return;

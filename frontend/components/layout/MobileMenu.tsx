@@ -12,6 +12,11 @@ export function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   const { isAuthenticated, user, logout } = useAuth();
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -99,16 +104,54 @@ export function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               </Link>
 
               <Link
-                href="/shop"
+                href="/products"
                 onClick={onClose}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive('/shop') 
+                  isActive('/products') 
                     ? 'bg-black text-white' 
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <ShoppingBag className="w-5 h-5" />
-                <span className="font-medium">Shop</span>
+                <span className="font-medium">Products</span>
+              </Link>
+
+              <Link
+                href="/categories"
+                onClick={onClose}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/categories') 
+                    ? 'bg-black text-white' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span className="font-medium">Categories</span>
+              </Link>
+
+              <Link
+                href="/about"
+                onClick={onClose}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/about') 
+                    ? 'bg-black text-white' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span className="font-medium">About</span>
+              </Link>
+              <Link
+                href="/contact"
+                onClick={onClose}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/contact') 
+                    ? 'bg-black text-white' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span className="font-medium">Contact</span>
               </Link>
             </div>
 
@@ -191,10 +234,7 @@ export function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               </div>
             ) : (
               <button
-                onClick={() => {
-                  logout();
-                  onClose();
-                }}
+                onClick={handleLogout}
                 className="flex items-center justify-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
               >
                 <LogOut className="w-5 h-5 mr-2" />

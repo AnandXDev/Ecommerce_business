@@ -44,6 +44,9 @@ interface Order {
       name: string;
       images: string[];
     };
+    pricing: {
+      total: number;
+    };
     quantity: number;
     price: number;
     total: number;
@@ -162,11 +165,11 @@ export default function MyOrdersPage() {
       selectedStatus === "all" || order.status === selectedStatus;
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.items.some((item) =>
-        item.productSnapshot?.name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()),
-      );
+     order.items.some((item) =>
+  item.productSnapshot?.name
+    ?.toLowerCase()
+    .includes(searchTerm.toLowerCase())
+)
     return matchesStatus && matchesSearch;
   });
 
@@ -426,7 +429,7 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-900 truncate">
-                                {item?.name || "Product"}
+                                {item?.productSnapshot?.name || "Product"}
                               </p>
                               <p className="text-sm text-gray-600">
                                 Qty: {item.quantity} × {formatPrice(item.price)}
@@ -434,7 +437,7 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-medium text-gray-900">
-                                {formatPrice(item.total)}
+                                {formatPrice(item.pricing?.total || 0)}
                               </p>
                             </div>
                           </div>
@@ -510,7 +513,7 @@ export default function MyOrdersPage() {
                         </span>
                       </p>
                       <p className="text-lg font-semibold text-gray-900 mt-1">
-                        Total: {formatPrice(order?.total || 0)}
+                        Total: {formatPrice(order.pricing?.total || 0)}
                       </p>
                     </div>
                     <div className="flex space-x-3">

@@ -35,6 +35,7 @@ export interface Cart {
   total: number;
   itemCount: number;
   lastUpdated: string;
+  discount: number;
 }
 
 interface CartContextType {
@@ -63,6 +64,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     total: 0,
     itemCount: 0,
     lastUpdated: new Date().toISOString(),
+    discount: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           total: totals.total,
           itemCount: totals.itemCount,
           lastUpdated: new Date().toISOString(),
+          discount: 0,
         });
       } else {
         console.error("❌ Could not find items in response", data);
@@ -289,7 +292,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // 2. Identify the correct ID for URL
     // Use productId consistently (that's what backend expects)
-    const idForUrl = itemToUpdate.productId || item.id;
+    const idForUrl = itemToUpdate.productId || itemId;
     
     console.log("🔍 ID for URL:", idForUrl);
     console.log("🔍 Item structure:", JSON.stringify(itemToUpdate, null, 2));
@@ -338,6 +341,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         total: 0,
         itemCount: 0,
         lastUpdated: new Date().toISOString(),
+        discount: 0,
       });
 
       // Sync with server if authenticated
