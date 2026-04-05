@@ -2,16 +2,17 @@ const nodemailer = require('nodemailer');
 
 // Create transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter({
-    host: process.env.EMAIL_HOST,
+  // Use Gmail or standard SMTP
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: process.env.EMAIL_PORT || 587,
-    secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
+    secure: process.env.EMAIL_PORT === '465',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
     tls: {
-      rejectUnauthorized: false // Allow self-signed certificates
+      rejectUnauthorized: false
     }
   });
 };
@@ -19,7 +20,24 @@ const createTransporter = () => {
 // Send email
 const sendEmail = async (options) => {
   try {
+    // Mock mode: just log instead of sending
+    if (process.env.EMAIL_MOCK === 'true') {
+      console.log('📧 MOCK EMAIL (Development Mode - no email sent)');
+      console.log(`   To: ${options.email}`);
+      console.log(`   Subject: ${options.subject}`);
+      return { messageId: 'mock-' + Date.now(), response: 'Mock email (development mode)' };
+    }
+
+    // Validate email configuration
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error('Email service not configured. Set EMAIL_USER and EMAIL_PASS or set EMAIL_MOCK=true for development');
+    }
+
     const transporter = createTransporter();
+    
+    if (!transporter) {
+      throw new Error('Failed to create email transporter');
+    }
 
     const mailOptions = {
       from: `${process.env.EMAIL_FROM_NAME || 'Dropship Ecommerce'} <${process.env.EMAIL_USER}>`,
@@ -30,10 +48,10 @@ const sendEmail = async (options) => {
 
     const info = await transporter.sendMail(mailOptions);
     
-    console.log('Email sent successfully:', info.messageId);
+    console.log('✅ Email sent successfully:', info.messageId);
     return info;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error.message);
     throw error;
   }
 };

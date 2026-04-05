@@ -6,6 +6,7 @@ import { useDashboardOverview, useRealTimeMetrics, formatCurrency, formatPercent
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { useOrders } from "@/hooks/useData";
 import { 
   Users, 
   Package, 
@@ -23,9 +24,64 @@ import {
   Minus
 } from 'lucide-react';
 
+interface Order {
+  _id: string;
+  orderNumber: string;
+  status:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
+  items: Array<{
+    _id: string;
+    product: string;
+    productSnapshot: {
+      name: string;
+      images: string[];
+    };
+    pricing: {
+      total: number;
+    };
+    quantity: number;
+    price: number;
+    total: number;
+  }>;
+  pricing: {
+    subtotal: number;
+    tax: number;
+    shipping: number;
+    total: number;
+  };
+  shippingAddress: {
+    fullName: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentDetails?: {
+    transactionId: string;
+    paymentIntentId: string;
+    gateway: string;
+    amount: number;
+    currency: string;
+    paidAt: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  estimatedDelivery?: string;
+  trackingNumber?: string;
+}
+
 export default function AdminDashboard() {
   const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const { data: overview, loading: overviewLoading, error: overviewError } = useDashboardOverview('30d', true);
+  const {orders,loadingOrders, ordersError, refreshOrders} = useOrders();
   // const { data: realTime, loading: realTimeLoading, error: realTimeError } = useRealTimeMetrics(true);
 
   // Debug logging
@@ -266,74 +322,117 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Orders */}
-      {overview && (
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Orders</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Order ID</th>
-                      <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Total</th>
-                      <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.recentOrders.slice(0, 5).map((order) => (
-                      <tr key={order._id} className="border-b">
-                        <td className="py-3 px-4">
-                          <span className="font-mono text-sm">{order.orderId}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="text-sm font-medium">
-                              {order.user.firstName} {order.user.lastName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {order.user.email}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="font-semibold">{formatCurrency(order.total)}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge 
-                            variant={
-                              order.status === 'delivered' ? 'default' :
-                              order.status === 'processing' ? 'secondary' :
-                              order.status === 'pending' ? 'outline' : 'destructive'
-                            }
-                          >
-                            {order.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+<div className="mt-8">
+  <Card>
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <CardTitle>Recent Orders</CardTitle>
+        <Button variant="outline" size="sm" onClick={refreshOrders}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+    </CardHeader>
+
+    <CardContent>
+      {/* ✅ Loading */}
+      {loadingOrders && (
+        <div className="text-center py-6 text-muted-foreground">
+          Loading orders...
         </div>
       )}
+
+      {/* ❌ Error */}
+      {ordersError && (
+        <div className="text-center py-6 text-red-500">
+          Failed to load orders
+        </div>
+      )}
+
+      {/* ✅ Empty */}
+      {!loadingOrders && (!orders || orders.length === 0) && (
+        <div className="text-center py-6 text-muted-foreground">
+          No orders found
+        </div>
+      )}
+
+      {/* ✅ Data */}
+      {orders?.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-4 text-sm">Order ID</th>
+                <th className="text-left py-2 px-4 text-sm">Customer</th>
+                <th className="text-left py-2 px-4 text-sm">Total</th>
+                <th className="text-left py-2 px-4 text-sm">Status</th>
+                <th className="text-left py-2 px-4 text-sm">Date</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {orders.slice(0, 5).map((order) => (
+                <tr key={order._id} className="border-b">
+
+                  {/* Order ID */}
+                  <td className="py-3 px-4">
+                    <span className="font-mono text-sm">
+                      {order.orderNumber || order._id}
+                    </span>
+                  </td>
+
+                  {/* Customer */}
+                  <td className="py-3 px-4">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {order.user?.firstName || "N/A"} {order.user?.lastName || ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {order.user?.email || "No email"}
+                      </p>
+                    </div>
+                  </td>
+
+                  {/* Total */}
+                  <td className="py-3 px-4">
+                    <span className="font-semibold">
+                      {formatCurrency(order.pricing?.total || 0)}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-3 px-4">
+                    <Badge
+                      variant={
+                        order.status === "delivered"
+                          ? "default"
+                          : order.status === "processing"
+                          ? "secondary"
+                          : order.status === "pending"
+                          ? "outline"
+                          : "destructive"
+                      }
+                    >
+                      {order.status}
+                    </Badge>
+                  </td>
+
+                  {/* Date */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </span>
+                  </td>
+
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</div>
 
       {/* Quick Stats */}
       {overview && (

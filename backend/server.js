@@ -10,7 +10,9 @@ const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
+
+// Load environment variables - explicitly set path to backend/.env
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Import routes
 const authRoutes = require('./src/routes/auth');

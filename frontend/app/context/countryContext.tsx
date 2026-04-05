@@ -1,55 +1,56 @@
-// "use client";
+"use client";
 
-// import { createContext, useContext, useEffect, useState } from "react";
-// import { countryConfig } from "@/utils/countryConfig";
-// import { getUserCountry } from "@/utils/getCountry";
+import { createContext, useContext, useEffect, useState } from "react";
 
-// type CountryCode = keyof typeof countryConfig;
+import { getUserCountry } from "../utils/getCountry";
+import { countryConfig } from "../utils/countryConfig";
 
-// interface CountryContextType {
-//   country: CountryCode;
-//   currency: string;
-//   changeCountry: (code: CountryCode) => void;
-// }
+type CountryCode = keyof typeof countryConfig;
 
-// const CountryContext = createContext<CountryContextType | null>(null);
+interface CountryContextType {
+  country: CountryCode;
+  currency: string;
+  changeCountry: (code: CountryCode) => void;
+}
 
-// export const CountryProvider = ({ children }: any) => {
-//   const [country, setCountry] = useState<CountryCode>("IN");
+const CountryContext = createContext<CountryContextType | null>(null);
 
-//   useEffect(() => {
-//     const init = async () => {
-//       const saved = localStorage.getItem("country") as CountryCode;
-//       if (saved) {
-//         setCountry(saved);
-//       } else {
-//         const detected = await getUserCountry();
-//         setCountry(detected in countryConfig ? detected : "IN");
-//       }
-//     };
-//     init();
-//   }, []);
+export const CountryProvider = ({ children }: any) => {
+  const [country, setCountry] = useState<CountryCode>("IN");
 
-//   const changeCountry = (code: CountryCode) => {
-//     setCountry(code);
-//     localStorage.setItem("country", code);
-//   };
+  useEffect(() => {
+    const init = async () => {
+      const saved = localStorage.getItem("country") as CountryCode;
+      if (saved) {
+        setCountry(saved);
+      } else {
+        const detected = await getUserCountry();
+        setCountry(detected in countryConfig ? detected : "IN");
+      }
+    };
+    init();
+  }, []);
 
-//   return (
-//     <CountryContext.Provider
-//       value={{
-//         country,
-//         currency: countryConfig[country].currency,
-//         changeCountry,
-//       }}
-//     >
-//       {children}
-//     </CountryContext.Provider>
-//   );
-// };
+  const changeCountry = (code: CountryCode) => {
+    setCountry(code);
+    localStorage.setItem("country", code);
+  };
 
-// export const useCountry = () => {
-//   const ctx = useContext(CountryContext);
-//   if (!ctx) throw new Error("useCountry must be used inside CountryProvider");
-//   return ctx;
-// };
+  return (
+    <CountryContext.Provider
+      value={{
+        country,
+        currency: countryConfig[country].currency,
+        changeCountry,
+      }}
+    >
+      {children}
+    </CountryContext.Provider>
+  );
+};
+
+export const useCountry = () => {
+  const ctx = useContext(CountryContext);
+  if (!ctx) throw new Error("useCountry must be used inside CountryProvider");
+  return ctx;
+};

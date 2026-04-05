@@ -46,7 +46,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.firstName + ' ' + user.lastName || '',
+        name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
         email: user.email || '',
         phone: user.phone || '',
         address: user.addresses[0]?.street || '',
@@ -77,18 +77,42 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      await updateProfile(formData);
-      setIsEditing(false);
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const handleSave = async () => {
+  setIsLoading(true);
+
+  try {
+    const [firstName, ...rest] = formData.name.split(" ");
+    const lastName = rest.join(" ");
+
+    const formattedData = {
+      firstName: firstName,
+      lastName: lastName,
+      email: formData.email,
+      phone: formData.phone,
+      addresses: [
+        {
+          type: "home",    
+          street: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country,
+            isDefault: true    
+        },
+      ],
+    };
+
+    await updateProfile(formattedData);
+
+    setIsEditing(false);
+    toast.success("Profile updated successfully");
+  } catch (error: any) {
+    console.log(error);
+    toast.error(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleCancel = () => {
     if (user) {

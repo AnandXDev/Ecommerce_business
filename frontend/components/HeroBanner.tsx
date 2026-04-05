@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowRight, Play, Star } from "lucide-react";
 import Link from "next/link";
+import RotatingText from "./RotatingText";
 import { url } from "inspector";
 
 interface HeroBannerProps {
@@ -86,8 +87,7 @@ export function HeroBanner({
       id: 3,
       title: "Urban Style",
       subtitle: "Streetwear Essentials",
-      image:
-        "https://i.ytimg.com/vi/8nBuO4bX52U/maxresdefault.jpg",
+      image: "https://i.ytimg.com/vi/8nBuO4bX52U/maxresdefault.jpg",
       gradient: "from-purple-600/40 to-transparent",
     },
     {
@@ -110,7 +110,7 @@ export function HeroBanner({
 
   const currentSlide1 = slides1[currentIndex];
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden h-2/5">
       {/* Background with gradient */}
       {/* <div className={`absolute inset-0 bg-gradient-to-br ${currentSlideData.gradient} transition-all duration-1000`} /> */}
       <div
@@ -172,20 +172,48 @@ export function HeroBanner({
               {/* Primary Button */}
               <Button
                 size="lg"
-                className="bg-lime-400 text-black hover:bg-lime-500 min-w-[160px] justify-center shadow-[0_0_20px_rgba(163,230,53,0.3)] hover:shadow-[0_0_30px_rgba(163,230,53,0.5)] border-2 border-lime-300/50 transition-all duration-300"
                 asChild
+                className="
+    relative overflow-hidden
+    bg-blue-400 backdrop-blur-md
+    text-white
+    text-lg
+    border border-white/20
+    min-w-[180px]
+    px-20 py-8
+    rounded-xl
+    transition-all duration-500
+    hover:bg-white/20
+    hover:scale-105
+    hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+    group
+
+  "
               >
                 <Link
                   href={primaryAction.href}
-                  className="inline-flex items-center space-x-2"
+                  className="flex items-center justify-center gap-2"
                 >
-                  <span>{primaryAction.text}</span>
-                  <ArrowRight className="h-5 w-5" />
+                  <RotatingText
+                    texts={["Start Shopping", "Explore Now", "Buy Now"]}
+                    mainClassName="font-semibold"
+                    staggerFrom="last"
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "-120%" }}
+                    staggerDuration={0.03}
+                    rotationInterval={2000}
+                  />
+
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+
+                  {/* ✨ glow effect */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-lime-300/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
                 </Link>
               </Button>
 
               {/* Secondary Button */}
-              <Button
+              {/* <Button
                 variant="outline"
                 size="lg"
                 className="min-w-[160px] justify-center"
@@ -198,7 +226,7 @@ export function HeroBanner({
                   <Play className="h-5 w-5" />
                   <span>{secondaryAction.text}</span>
                 </Link>
-              </Button>
+              </Button> */}
             </div>
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6 pt-8 justify-center ">

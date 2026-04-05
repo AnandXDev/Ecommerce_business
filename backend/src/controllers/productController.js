@@ -532,6 +532,17 @@ exports.getProductReviews = async (req, res, next) => {
     next(error);
   }
 };
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate("category")
+      .populate("supplier");
+
+    res.json(product);
+  } catch (err) {
+    res.status(404).json({ error: "Product not found" });
+  }
+};
 
 // Add product review
 exports.addProductReview = async (req, res, next) => {

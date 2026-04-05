@@ -9,6 +9,7 @@ import { useCart } from "@/hooks/useCart";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { useSearchParams } from "next/navigation";
 import { Separator } from "@/components/ui/Separator";
 import {
   ShoppingCart,
@@ -35,6 +36,9 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+const searchQuery = searchParams.get("q")?.toLowerCase() || "";
+const [isRedirecting, setIsRedirecting] = useState(false);
 
   const slug = params.slug as string;
 
@@ -91,11 +95,12 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Check if product exists and redirect if not
   useEffect(() => {
-    if (!loading && !product && !error) {
-      // Product not found after loading
+  if (!loading && !product && !error && !isRedirecting) {
+    if (window.location.pathname !== "/checkout") {
       router.push("/products");
     }
-  }, [loading, product, error, router]);
+  }
+}, [loading, product, error, router]);
 
   // Debug logging for product data
   useEffect(() => {
@@ -195,10 +200,14 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = async (e?: React.MouseEvent) => {
+  // 🔥 1. Prevent default native browser behavior
+  if (e) e.preventDefault(); 
+  
   if (!isInStock) return;
-
+  setIsRedirecting(true); 
   setIsBuying(true);
+
   try {
     const tempCartItem = {
       productId: product._id,
@@ -219,17 +228,19 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
       })
     );
 
-    console.log("Navigating to checkout..."); // DEBUG
-
+    console.log("Navigating to checkout...");
     router.push("/checkout");
+    
+    // 🔥 2. Notice there is NO finally block setting setIsBuying(false). 
+    // We want the button to stay in the "Processing..." state until the page unmounts.
   } catch (error) {
     console.error(error);
     toast.error("Failed to process buy now");
-  } finally {
+    // Only turn off the loading states if an error actually occurred
     setIsBuying(false);
+    setIsRedirecting(false);
   }
 };
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -294,6 +305,7 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
                   <Image
                     src={images[selectedImageIndex].url}
                     alt={images[selectedImageIndex].alt}
+                    loading="lazy"
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -449,6 +461,7 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
 
               <div className="flex space-x-4">
                 <Button
+                type="button"
                   onClick={handleAddToCart}
                   disabled={!isInStock || isAddingToCart}
                   className="flex-1"
@@ -470,7 +483,9 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
                   )}
                 </Button>
 
+                
                 <Button
+                type="button"
                   onClick={handleBuyNow}
                   disabled={!isInStock || isBuying}
                   className="flex-1"
@@ -487,6 +502,7 @@ const [isAddingToCart, setIsAddingToCart] = useState(false);
                     "Buy Now"
                   )}
                 </Button>
+              
 
                 <Button
                   variant="outline"

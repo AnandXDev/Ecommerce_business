@@ -24,7 +24,7 @@ export function CategoryCard({ category, viewMode = 'grid', featured = false }: 
       <Link href={`/products?category=${category._id}`}>
         <div className="flex items-center gap-4 p-4 bg-card rounded-lg border hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer group">
           <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center text-2xl">
-            {category.icon || '📦'}
+            {category.image || '📦'}
           </div>
           
           <div className="flex-1">

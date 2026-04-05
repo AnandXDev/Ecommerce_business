@@ -127,7 +127,7 @@ export function LoginForm() {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-blue-400"
             disabled={isLoading}
             isLoading={isLoading}
           >

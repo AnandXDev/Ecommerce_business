@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { Input } from "@/components/ui/Input";
 import { QuantitySelector } from "@/components/ui/QuantitySelector";
+import { useProducts } from "@/hooks/useData"; // Ensure this is imported if needed for product details
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import {
   Trash2,
@@ -39,6 +40,7 @@ export default function CartPage() {
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { products } = useProducts();
 
   useEffect(() => {
     // Only check authentication after loading is complete
@@ -246,7 +248,7 @@ export default function CartPage() {
                 You might also like
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
+                {products.slice(1, 4).map((product: any, i) => (
                   <div
                     key={i}
                     className="bg-white rounded-lg shadow-sm p-4 text-center"
@@ -255,7 +257,7 @@ export default function CartPage() {
                     <h3 className="font-medium text-gray-900 mb-2">
                       Featured Product {i}
                     </h3>
-                    <p className="text-gray-600 mb-4">$99.99</p>
+                    <p className="text-gray-600 mb-4">${product.pricing?.basePrice?.toFixed(2) || "0.00"}</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -386,7 +388,7 @@ export default function CartPage() {
                             <QuantitySelector
                               value={item.quantity}
                               onChange={(newVal) =>
-                                updateQuantity(item.productId, newVal)
+                                updateQuantity(item.id, newVal)
                               } // Make sure this is item.id
                             />
                           </div>

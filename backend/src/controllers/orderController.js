@@ -416,7 +416,8 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('items.product', 'name images');
+      .populate('items.product', 'name images')
+      .populate('user', 'firstName lastName email'); // 🔥 ADD THIS
 
     const total = await Order.countDocuments({ user: req.user.id });
 

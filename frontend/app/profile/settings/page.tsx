@@ -97,18 +97,24 @@ export default function SettingsPage() {
     );
   }
 
+  const { updateProfile } = useAuth(); // add this
   const handleAccountUpdate = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Account settings updated successfully');
-    } catch (error) {
-      toast.error('Failed to update account settings');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+
+  try {
+    await updateProfile({
+      email: accountData.email,
+      phone: accountData.phone
+    });
+
+    toast.success("Account updated successfully");
+  } catch (error: any) {
+    console.log(error);
+    toast.error(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handlePasswordUpdate = async () => {
     if(!passwordData.currentPassword){

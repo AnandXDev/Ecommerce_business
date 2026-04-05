@@ -46,7 +46,9 @@ export function ProductCard({
   const isInStock = (inventory?.quantity || 0) > 0;
   const isLowStock = inventory && (inventory.quantity || 0) <= (inventory.lowStockThreshold || 0);
   const hasDiscount = pricing?.comparePrice && pricing.comparePrice > (pricing?.basePrice || 0);
-
+const discountPercentage = hasDiscount && pricing?.comparePrice
+  ? Math.round(((pricing.comparePrice - (pricing?.basePrice || 0)) / pricing.comparePrice) * 100)
+  : 0;
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -65,17 +67,16 @@ export function ProductCard({
         quantity: 1
       });
       // Success message is handled by the cart hook or component
-    } catch (error: any) {
-      console.error('Failed to add to cart:', error);
-      
-      // If authentication error, redirect to login
-      if (error.message?.includes('login') || error.message?.includes('authenticated')) {
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('Failed to add to cart:', err);
+
+      if (err.message?.includes('login') || err.message?.includes('authenticated')) {
         router.push('/login');
         return;
       }
-      
-      // Show error message
-      toast.error(error.message || 'Failed to add to cart');
+
+      toast.error(err.message || 'Failed to add to cart');
     } finally {
       setIsAddingToCart(false);
     }
@@ -136,38 +137,44 @@ export function ProductCard({
 
   return (
     <div 
-      className={`group relative overflow-hidden border-0 shadow-soft hover:shadow-lg transition-all duration-300 rounded-lg bg-white cursor-pointer ${className}`}
-      onClick={handleCardClick}
-    >
+  className={`group relative flex flex-col 
+  h-[420px] w-full 
+  overflow-hidden rounded-lg bg-white 
+  shadow-soft hover:shadow-lg transition-all duration-300 cursor-pointer ${className}`}
+  onClick={handleCardClick}
+>
       {/* Product Image */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
-        {(images?.length || 0) > 0 && (
-          <>
-            <Image
-              src={images[0]?.url || '/placeholder-image.jpg'}
-              alt={images[0]?.alt || name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-            
-            {/* Additional images on hover */}
-            {(images?.length || 0) > 1 && (
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                {images?.slice(1, 2).map((image: any, index: number) => (
-                  <Image
-                    key={index}
-                    src={image.url}
-                    alt={image.alt || name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+      <div className="relative h-64 max-h-72 w-full  overflow-hidden bg-gray-50">
+       {(images?.length || 0) > 0 && (
+  <div className="relative h-64 w-full overflow-hidden ">
+    
+    {/* Main Image */}
+    <Image
+      src={images[currentImageIndex]?.url || '/placeholder-image.jpg'}
+      alt={images[currentImageIndex]?.alt || name}
+      fill
+      className="object-cover group-hover:scale-105 transition-transform duration-300"
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+    />
+
+    {/* Hover Image */}
+    {(images?.length || 0) > 1 && (
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {images?.slice(1, 2).map((image: any, index: number) => (
+          <Image
+            key={index}
+            src={image.url}
+            alt={image.alt || name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ))}
+      </div>
+    )}
+
+  </div>
+)}
 
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-2">
@@ -177,8 +184,8 @@ export function ProductCard({
             </Badge>
           )}
           {hasDiscount && (
-            <Badge variant="destructive" className="text-xs">
-              -{Math.round(((pricing?.comparePrice - pricing?.basePrice) / pricing?.comparePrice) * 100)}%
+            <Badge variant="destructive" className="text-xs bg-red-700">
+              -{discountPercentage}%
             </Badge>
           )}
           {!isInStock && (
@@ -241,12 +248,12 @@ export function ProductCard({
       </div>
 
       {/* Product Info */}
-      <div className="p-4">
+      <div className="pt-1 px-4 flex flex-col flex-grow">
         {/* Category */}
-        <div className="mb-2">
+        {/* <div className="mb-2">
           {category ? (
             <Link 
-              href={`/categories/${category.slug}`}
+              href={`/categories/${category.slug || ''}`}
               className="text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               {category.name}
@@ -256,62 +263,70 @@ export function ProductCard({
               Uncategorized
             </span>
           )}
-        </div>
+        </div> */}
 
         {/* Product Name */}
-        <Link href={`/products/${slug}`}>
-          <h3 className="font-semibold text-sm lg:text-base text-foreground line-clamp-2 hover:text-primary transition-colors mb-2">
-            {name}
-          </h3>
-        </Link>
+      <div className="flex flex-col flex-1 p-4">
 
-        {/* Rating */}
-        <div className="flex items-center space-x-1 mb-2">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-3 w-3 ${
-                  i < Math.floor(rating?.average || 0)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-muted-foreground">
-            ({rating?.count || 0})
-          </span>
-        </div>
+  {/* NAME (FIXED HEIGHT) */}
+  <Link href={`/products/${slug}`}>
+    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 min-h-[44px] hover:text-primary transition-colors">
+      {name}
+    </h3>
+  </Link>
 
-        {/* Price */}
-        <div className="flex items-center space-x-2 mb-3">
-          <span className="font-bold text-lg text-foreground">
-            {formatPrice(pricing?.basePrice || 0)}
-          </span>
-          {hasDiscount && (
-            <span className="text-sm text-muted-foreground line-through">
-              {formatPrice(pricing?.comparePrice || 0)}
-            </span>
-          )}
-        </div>
+  {/* RATING (FIXED HEIGHT) */}
+  <div className="flex items-center space-x-1 h-[20px] mt-1">
+    <div className="flex items-center">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`h-3 w-3 ${
+            i < Math.floor(rating?.average || 0)
+              ? 'fill-yellow-400 text-yellow-400'
+              : 'text-gray-300'
+          }`}
+        />
+      ))}
+    </div>
+    <span className="text-xs text-gray-500">
+      ({rating?.count || 0})
+    </span>
+  </div>
 
-        {/* Shipping Info */}
-        <div className="flex items-center space-x-2 mb-3">
-          {shipping?.freeShipping && (
-            <div className="flex items-center text-xs text-green-600">
-              <Truck className="h-3 w-3 mr-1" />
-              Free Shipping
-            </div>
-          )}
-          <div className="flex items-center text-xs text-muted-foreground">
-            <Package className="h-3 w-3 mr-1" />
-            {shipping?.estimatedDelivery || 'Standard Delivery'}
-          </div>
+  {/* PRICE (FIXED HEIGHT) */}
+  <div className="flex items-center space-x-2 h-[28px] mt-2">
+    <span className="text-lg font-semibold text-gray-900">
+      {formatPrice(pricing?.basePrice || 0)}
+    </span>
+    {hasDiscount && (
+      <span className="text-sm text-gray-400 line-through">
+        {formatPrice(pricing?.comparePrice || 0)}
+      </span>
+    )}
+  </div>
+
+  {/* PUSH SHIPPING TO BOTTOM */}
+  <div className="mt-auto">
+    <div className="flex items-center space-x-2 text-xs mt-2">
+      {shipping?.freeShipping && (
+        <div className="flex items-center text-green-600">
+          <Truck className="h-3 w-3 mr-1" />
+          Free
         </div>
+      )}
+
+      <div className="flex items-center text-gray-500">
+        <Package className="h-3 w-3 mr-1" />
+        {shipping?.estimatedDelivery || 'Standard'}
+      </div>
+    </div>
+  </div>
+
+</div>
 
         {/* Action Buttons */}
-        <div className="flex space-x-2">
+        {/* <div className="flex space-x-2">
           <Button
             onClick={handleAddToCart}
             disabled={!isInStock || isAddingToCart}
@@ -342,7 +357,7 @@ export function ProductCard({
           >
             Buy Now
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

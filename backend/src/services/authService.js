@@ -1,52 +1,57 @@
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const User = require('../models/User');
-const { sendEmail } = require('./emailService');
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const User = require("../models/User");
+const { sendEmail } = require("./emailService");
 
 // Generate JWT token
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
+    expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
 
 // Create and send token response
 const createSendToken = (user, statusCode, res, message) => {
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET || '123456',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "123456", {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
 
-  res.cookie('jwt', token, {
-    expires: new Date(
-      Date.now() + 7 * 24 * 60 * 60 * 1000
-    ),
+  res.cookie("jwt", token, {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    sameSite: 'lax',   // 👈 important
-    secure: false      // 👈 true in production
+    sameSite: "lax", // 👈 important
+    secure: false, // 👈 true in production
   });
 
   res.status(statusCode).json({
-    status: 'success',
+    status: "success",
     message,
     token,
     data: {
-      user
-    }
+      user,
+    },
   });
 };
 
 // Generate random token
 const createRandomToken = () => {
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  return crypto.createHash('sha256').update(resetToken).digest('hex');
+  const rawToken = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
+
+  return { rawToken, hashedToken };
 };
 
 // Send email verification
 const sendEmailVerification = async (user) => {
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
 
   user.emailVerificationToken = hashedToken;
   await user.save({ validateBeforeSave: false });
@@ -64,20 +69,25 @@ const sendEmailVerification = async (user) => {
   try {
     await sendEmail({
       email: user.email,
-      subject: 'Email Verification - Dropship Ecommerce',
-      message
+      subject: "Email Verification - Dropship Ecommerce",
+      message,
     });
   } catch (error) {
     user.emailVerificationToken = undefined;
     await user.save({ validateBeforeSave: false });
-    throw new Error('There was an error sending the verification email. Please try again later.');
+    throw new Error(
+      "There was an error sending the verification email. Please try again later.",
+    );
   }
 };
 
 // Send password reset email
 const sendPasswordResetEmail = async (user) => {
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
 
   user.passwordResetToken = hashedToken;
   user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -97,14 +107,16 @@ const sendPasswordResetEmail = async (user) => {
   try {
     await sendEmail({
       email: user.email,
-      subject: 'Password Reset - Dropship Ecommerce',
-      message
+      subject: "Password Reset - Dropship Ecommerce",
+      message,
     });
   } catch (error) {
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
-    throw new Error('There was an error sending the password reset email. Please try again later.');
+    throw new Error(
+      "There was an error sending the password reset email. Please try again later.",
+    );
   }
 };
 
@@ -115,7 +127,7 @@ const signup = async (userData) => {
   // Check if user already exists
   const existingUser = await User.findByEmail(email);
   if (existingUser) {
-    throw new Error('A user with this email already exists');
+    throw new Error("A user with this email already exists");
   }
 
   // Create new user
@@ -124,18 +136,19 @@ const signup = async (userData) => {
     lastName,
     email,
     password,
-    phone
+    phone,
   });
 
   // Send email verification
   await sendEmailVerification(newUser);
 
   // Don't send token until email is verified
-  newUser.password = undefined;
+  // newUser.password = undefined;
 
   return {
-    message: 'User registered successfully. Please check your email to verify your account.',
-    user: newUser
+    message:
+      "User registered successfully. Please check your email to verify your account.",
+    user: newUser,
   };
 };
 
@@ -143,24 +156,41 @@ const signup = async (userData) => {
 const login = async (email, password) => {
   // Check if email and password exist
   if (!email || !password) {
-    throw new Error('Please provide email and password');
+    throw new Error("Please provide email and password");
   }
 
   // Check if user exists && password is correct
-  const user = await User.findByEmail(email).select('+password');
-  
-  if (!user || !(await user.correctPassword(password, user.password))) {
-    throw new Error('Incorrect email or password');
-  }
+  const user = await User.findByEmail(email).select("+password");
+
+  if (!user) {
+  throw new Error("User not found");
+}
+
+// 🚨 NEW CHECK
+if (!user.password) {
+  const error = new Error("Please login using Google or reset your password");
+error.statusCode = 400;
+throw error;
+}
+
+const isMatch = await user.correctPassword(password, user.password);
+
+if (!isMatch) {
+  throw new Error("Incorrect email or password");
+}
 
   // Check if user is active
   if (!user.isActive) {
-    throw new Error('Your account has been deactivated. Please contact support.');
+    throw new Error(
+      "Your account has been deactivated. Please contact support.",
+    );
   }
 
   // Check if email is verified
   if (!user.isEmailVerified) {
-    throw new Error('Please verify your email address before logging in.');
+    const error = new Error("Please verify your email first");
+error.statusCode = 403;
+throw error;  
   }
 
   // Update last login
@@ -184,7 +214,9 @@ const googleAuth = async (googleUser) => {
   if (user) {
     // User exists, log them in
     if (!user.isActive) {
-      throw new Error('Your account has been deactivated. Please contact support.');
+      throw new Error(
+        "Your account has been deactivated. Please contact support.",
+      );
     }
 
     // Update last login
@@ -194,7 +226,7 @@ const googleAuth = async (googleUser) => {
   } else {
     // Check if user exists with email
     const existingUser = await User.findByEmail(email);
-    
+
     if (existingUser) {
       // Link Google account to existing user
       existingUser.googleId = id;
@@ -205,14 +237,14 @@ const googleAuth = async (googleUser) => {
     } else {
       // Create new user with Google data
       user = await User.create({
-        firstName: firstName || '',
-        lastName: lastName || '',
+        firstName: firstName || "",
+        lastName: lastName || "",
         email,
         googleId: id,
         avatar: picture,
         isEmailVerified: true, // Google email is verified
         lastLogin: new Date(),
-        loginCount: 1
+        loginCount: 1,
       });
     }
   }
@@ -225,15 +257,15 @@ const googleAuth = async (googleUser) => {
 
 // Verify email
 const verifyEmail = async (token) => {
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
-    isEmailVerified: false
+    isEmailVerified: false,
   });
 
   if (!user) {
-    throw new Error('Token is invalid or has expired');
+    throw new Error("Token is invalid or has expired");
   }
 
   // Mark email as verified
@@ -248,31 +280,31 @@ const verifyEmail = async (token) => {
 const forgotPassword = async (email) => {
   // Find user by email
   const user = await User.findByEmail(email);
-  
+
   if (!user) {
-    throw new Error('There is no user with that email address');
+    throw new Error("There is no user with that email address");
   }
 
   // Generate reset token
   await sendPasswordResetEmail(user);
 
   return {
-    message: 'Password reset token sent to email'
+    message: "Password reset token sent to email",
   };
 };
 
 // Reset password
 const resetPassword = async (token, newPassword) => {
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   // Find user by token and check if token hasn't expired
   const user = await User.findOne({
     passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() }
+    passwordResetExpires: { $gt: Date.now() },
   });
 
   if (!user) {
-    throw new Error('Token is invalid or has expired');
+    throw new Error("Token is invalid or has expired");
   }
 
   // Set new password
@@ -280,7 +312,7 @@ const resetPassword = async (token, newPassword) => {
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   user.passwordChangedAt = Date.now();
-  
+
   await user.save();
 
   return user;
@@ -289,11 +321,16 @@ const resetPassword = async (token, newPassword) => {
 // Update password
 const updatePassword = async (user, currentPassword, newPassword) => {
   // Get user with password
-  const userWithPassword = await User.findById(user.id).select('+password');
+  const userWithPassword = await User.findById(user.id).select("+password");
 
   // Check if current password is correct
-  if (!(await userWithPassword.correctPassword(currentPassword, userWithPassword.password))) {
-    throw new Error('Your current password is wrong');
+  if (
+    !(await userWithPassword.correctPassword(
+      currentPassword,
+      userWithPassword.password,
+    ))
+  ) {
+    throw new Error("Your current password is wrong");
   }
 
   // Update password
@@ -306,16 +343,16 @@ const updatePassword = async (user, currentPassword, newPassword) => {
 
 // Logout user
 const logout = (req, res) => {
-  res.cookie('jwt', '', {
+  res.cookie("jwt", "", {
     expires: new Date(0), // 👈 instantly expire
     httpOnly: true,
-    sameSite: 'lax',      // 👈 must match login cookie
-    secure: false         // 👈 true in production (https)
+    sameSite: "lax", // 👈 must match login cookie
+    secure: false, // 👈 true in production (https)
   });
 
   res.status(200).json({
-    status: 'success',
-    message: 'Logged out successfully'
+    status: "success",
+    message: "Logged out successfully",
   });
 };
 
@@ -332,5 +369,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   updatePassword,
-  logout
+  logout,
 };

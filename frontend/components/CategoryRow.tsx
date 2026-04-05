@@ -43,18 +43,22 @@ export function CategoryRow({ categories, title, showAll = false }: CategoryRowP
           >
             <div className="flex flex-col  items-center p-4 bg-card rounded-lg border hover:shadow-md transition-all hover:scale-105 min-w-[100px]">
               <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center text-2xl mb-3 group-hover:from-primary/30 group-hover:to-primary/20 transition-colors">
-                {category.icon || '📦'}
+                {category.image ? (
+                  <img src={category.image} alt={category.name} className="w-full text-lg h-full object-cover rounded-lg" />
+                ) : (
+                  '📦'
+                )}
               </div>
               
-              <h3 className="text-sm font-medium text-foreground text-center group-hover:text-primary transition-colors">
+              <h3 className=" text-lg font-medium text-foreground text-center group-hover:text-primary transition-colors">
                 {category.name}
               </h3>
               
-              {category.productCount && (
+              {/* {category.productCount && (
                 <Badge variant="secondary" className="mt-2 text-xs">
                   {category.productCount}
                 </Badge>
-              )}
+              )} */}
             </div>
           </Link>
         ))}

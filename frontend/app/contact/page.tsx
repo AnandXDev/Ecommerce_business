@@ -1,79 +1,81 @@
 "use client";
 
-import { useState } from 'react';
-import { ContactForm } from '@/components/contact/ContactForm';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Clock,
-  MessageCircle,
-  Send
-} from 'lucide-react';
+import { useState } from "react";
+import { ContactForm } from "@/components/contact/ContactForm";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import emailjs from "@emailjs/browser";
+
+import { Mail, Phone, MapPin, Clock, MessageCircle, Send } from "lucide-react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
   const contactInfo = [
     {
       icon: Mail,
       title: "Email Us",
       value: "support@luxecart.com",
-      description: "We'll respond within 24 hours"
+      description: "We'll respond within 24 hours",
     },
     {
       icon: Phone,
       title: "Call Us",
       value: "+1 (555) 123-4567",
-      description: "Mon-Fri 9AM-6PM EST"
+      description: "Mon-Fri 9AM-6PM EST",
     },
     {
       icon: MapPin,
       title: "Visit Us",
       value: "123 Shopping Street, Commerce City, CC 12345",
-      description: "Showroom open Mon-Sat 10AM-7PM"
+      description: "Showroom open Mon-Sat 10AM-7PM",
     },
     {
       icon: Clock,
       title: "Business Hours",
       value: "Mon-Fri: 9AM-6PM EST",
-      description: "Weekend: 10AM-4PM EST"
-    }
+      description: "Weekend: 10AM-4PM EST",
+    },
   ];
 
   const socialLinks = [
     { name: "Facebook", icon: "📘", url: "#" },
     { name: "Twitter", icon: "🐦", url: "#" },
-    { name: "Instagram", icon: "📷", url: "#" },
-    { name: "LinkedIn", icon: "💼", url: "#" }
+    { name: "Instagram", icon: "", url: "https://www.instagram.com/anandxdev" },
+    { name: "LinkedIn", icon: "", url: "https://www.linkedin.com/in/anand-kumar-405069317 " },
   ];
 
   const faqs = [
     {
       question: "How long does shipping take?",
-      answer: "Standard shipping takes 5-7 business days, while express shipping takes 2-3 business days."
+      answer:
+        "Standard shipping takes 5-7 business days, while express shipping takes 2-3 business days.",
     },
     {
       question: "What is your return policy?",
-      answer: "We offer a 30-day hassle-free return policy. Items must be unused and in original packaging."
+      answer:
+        "We offer a 30-day hassle-free return policy. Items must be unused and in original packaging.",
     },
     {
       question: "Do you ship internationally?",
-      answer: "Yes, we ship to over 25 countries worldwide. International shipping times vary by destination."
+      answer:
+        "Yes, we ship to over 25 countries worldwide. International shipping times vary by destination.",
     },
     {
       question: "How can I track my order?",
-      answer: "Once your order ships, you'll receive a tracking number via email to monitor your delivery."
-    }
+      answer:
+        "Once your order ships, you'll receive a tracking number via email to monitor your delivery.",
+    },
   ];
 
   return (
@@ -90,8 +92,8 @@ export default function ContactPage() {
               <span className="text-primary block"> Help You</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Have questions about your order? Need help with a product? 
-              Our friendly support team is ready to assist you.
+              Have questions about your order? Need help with a product? Our
+              friendly support team is ready to assist you.
             </p>
           </div>
         </div>
@@ -105,24 +107,46 @@ export default function ContactPage() {
               <h2 className="text-2xl font-bold text-foreground mb-6">
                 Send us a Message
               </h2>
-              
-              <ContactForm 
+
+              <ContactForm
                 onSubmit={async (data) => {
                   setIsSubmitting(true);
+
                   try {
-                    // Simulate API call
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    setSubmitStatus('success');
-                    setFormData({ name: '', email: '', subject: '', message: '' });
+                    // Initialize EmailJS with your public key
+                    emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "");
+
+                    const result = await emailjs.send(
+                      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+                      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "",
+                      {
+                        user_name: data.name,
+                        user_email: data.email,
+                        subject: data.subject,
+                        category: data.subject,
+                        message: data.message,
+                      }
+                    );
+
+                    console.log(result.text);
+
+                    setSubmitStatus("success");
+                    setFormData({
+                      name: "",
+                      email: "",
+                      subject: "",
+                      message: "",
+                    });
                   } catch (error) {
-                    setSubmitStatus('error');
+                    console.error(error);
+                    setSubmitStatus("error");
                   } finally {
                     setIsSubmitting(false);
                   }
                 }}
               />
 
-              {submitStatus === 'success' && (
+              {submitStatus === "success" && (
                 <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
                   <p className="text-green-600 dark:text-green-400">
                     Thank you for your message! We'll get back to you soon.
@@ -130,7 +154,7 @@ export default function ContactPage() {
                 </div>
               )}
 
-              {submitStatus === 'error' && (
+              {submitStatus === "error" && (
                 <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                   <p className="text-red-600 dark:text-red-400">
                     Something went wrong. Please try again later.
@@ -147,7 +171,7 @@ export default function ContactPage() {
               <h3 className="text-xl font-bold text-foreground mb-6">
                 Get in Touch
               </h3>
-              
+
               <div className="space-y-4">
                 {contactInfo.map((info, index) => (
                   <div key={index} className="flex gap-4">
@@ -155,9 +179,13 @@ export default function ContactPage() {
                       <info.icon className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground">{info.title}</h4>
+                      <h4 className="font-semibold text-foreground">
+                        {info.title}
+                      </h4>
                       <p className="text-sm text-foreground">{info.value}</p>
-                      <p className="text-xs text-muted-foreground">{info.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {info.description}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -169,7 +197,7 @@ export default function ContactPage() {
               <h3 className="text-xl font-bold text-foreground mb-6">
                 Follow Us
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 {socialLinks.map((social, index) => (
                   <a
@@ -210,7 +238,7 @@ export default function ContactPage() {
               Quick answers to common questions
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {faqs.map((faq, index) => (
               <div
@@ -220,9 +248,7 @@ export default function ContactPage() {
                 <h3 className="font-semibold text-foreground mb-3">
                   {faq.question}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {faq.answer}
-                </p>
+                <p className="text-sm text-muted-foreground">{faq.answer}</p>
               </div>
             ))}
           </div>
@@ -247,6 +273,38 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
+        {isMapOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="bg-white rounded-xl w-[90%] max-w-3xl shadow-2xl overflow-hidden relative">
+
+      {/* Close Button */}
+      <button
+        onClick={() => setIsMapOpen(false)}
+        className="absolute top-3 right-3 bg-black/70 text-white px-3 py-1 rounded-md text-sm"
+      >
+        ✕
+      </button>
+
+      {/* Map */}
+      <div className="w-full h-[400px]">
+        <iframe
+          width="100%"
+          height="100%"
+          loading="lazy"
+          allowFullScreen
+          src="https://www.google.com/maps?q=28.4595,77.0266&z=15&output=embed"
+        ></iframe>
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 text-center">
+        <p className="text-sm text-gray-600">
+          📍 Gurgaon, India (Example Location)
+        </p>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

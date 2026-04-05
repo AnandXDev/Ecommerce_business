@@ -32,7 +32,7 @@ exports.getMe = (req, res) => {
 // Sign up new user
 exports.signup = async (req, res, next) => {
   try {
-   const { email } = req.body;
+   const { email  } = req.body;
 
     // 🔍 1. FETCH USER FROM DB
     const existingUser = await User.findOne({ email });
@@ -56,25 +56,32 @@ exports.signup = async (req, res, next) => {
     }
 
     // ✅ 1. Create user
-    const user = await signup(req.body); // your service
+    const result = await signup(req.body); // your service
+    const user = result.user || result;
 
     // ✅ 2. Generate token
     const { rawToken, hashedToken } = createRandomToken();
 
     // ✅ 3. Save hashed token in DB
-    user.verificationToken = hashedToken;
+    user.emailVerificationToken = hashedToken;
     user.verificationTokenExpires = Date.now() + 10 * 60 * 1000;
 
-    await user.save();
+    // await user.save({ validateBeforeSave: false });
 
     // ✅ 4. Send email with RAW token
-    const verifyURL = `http://localhost:3000/verify-email?token=${rawToken}`;
+    const verifyURL = `http://localhost:3000/verify-email/${rawToken}`;
+    console.log("VERIFY URL:", verifyURL);
+    const message = `<h2>Verify Your Email</h2><p>Click <a href="${verifyURL}">here</a> to verify your email</p>`;
 
-    await sendEmail(
-      user.email,
-      'Verify your email',
-      `Click to verify: ${verifyURL}`
-    );
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify your email',
+        message: message
+      });
+    } catch (emailError) {
+      console.warn('Email sending failed (non-fatal):', emailError.message);
+    }
 
     // ✅ 5. Send response (NO redirect here)
     res.status(201).json({
@@ -92,90 +99,107 @@ exports.signup = async (req, res, next) => {
 // };
 
 // Login user
+
+
 exports.login = async (req, res, next) => {
   try {
-    // Check for validation errors
+    // ✅ Validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
         status: 'fail',
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
     }
 
     const { email, password } = req.body;
+
+    // ✅ Call service
     const user = await login(email, password);
 
+    // ✅ Send token
     createSendToken(user, 200, res, 'Login successful');
-    console.log("LOGIN RESPONSE:", res.data);
-    
+
+    console.log("LOGIN RESPONSE:", user.email);
+
   } catch (error) {
-    next(error);
-  }
-};
+    console.error("LOGIN ERROR:", error);
 
-// Google OAuth
-exports.googleAuth = async (req, res, next) => {
-  try {
-    const { token } = req.body; // 👈 FIX (important)
-
-    const user = await googleAuthService(token); // 👈 FIX
-
-    createSendToken(user, 200, res, 'Google authentication successful');
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Verify email
-exports.verifyEmail = async (req, res, next) => {
-  try {
-    const { token } = req.query; // ✅ FIX
-
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    const user = await User.findOne({
-      verificationToken: hashedToken,
-      verificationTokenExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({
+    // ✅ Handle known errors
+    if (error.message?.includes('Incorrect email or password')) {
+      return res.status(401).json({
         status: 'fail',
-        message: 'Invalid or expired token'
+        message: error.message,
       });
     }
 
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
+    if (error.message?.includes('verify')) {
+      return res.status(403).json({
+        status: 'fail',
+        message: error.message,
+      });
+    }
 
-    await user.save();
+    if (error.message?.includes('deactivated')) {
+      return res.status(403).json({
+        status: 'fail',
+        message: error.message,
+      });
+    }
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Email verified successfully'
+    // ✅ Default fallback (VERY IMPORTANT)
+    return res.status(error.statusCode || 500).json({
+      status: 'error',
+      message: error.message || 'Internal Server Error',
     });
+  }
+};
+// Google OAuth
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const { token } = req.body;
 
+    if (!token) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Google token is required'
+      });
+    }
+
+    const user = await googleAuthService(token);
+
+    createSendToken(user, 200, res, 'Google authentication successful');
   } catch (error) {
+    console.error('Google Auth Error:', error.message);
+    
+    if (error.message && error.message.includes('token')) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Invalid or expired Google token'
+      });
+    }
+
     next(error);
   }
 };
+
+
 
 // ✅ SEND OTP
 exports.sendOTP = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email?.toLowerCase().trim();
+    console.log("OTP REQUEST EMAIL:", email);
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({
+  email: { $regex: `^${email}$`, $options: "i" }
+});
+    
 
     if (!user) {
       return res.status(400).json({
@@ -200,19 +224,24 @@ exports.sendOTP = async (req, res) => {
     await user.save();
 
     // ✅ FIX EMAIL FORMAT
-    await sendEmail({
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP is ${otp}`
-    });
+    try {
+      await sendEmail({
+        email: email,
+        subject: "Your OTP Code",
+        text: `Your OTP is ${otp}`
+      });
+
+      console.log("OTP:", otp); // 🔥 debug
+    } catch (emailError) {
+      console.warn('OTP Email sending failed:', emailError.message);
+    }
 
     console.log("OTP:", otp); // 🔥 debug
 
-    res.json({
-      success: true,
-      message: "OTP sent to email"
+    res.status(200).json({
+      status: 'success',
+      message: "OTP sent successfully"
     });
-
   } catch (error) {
     console.error("SEND OTP ERROR:", error);
     res.status(500).json({ error: error.message });
@@ -231,6 +260,7 @@ exports.verifyOTP = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+    console.log("OTP REQUEST EMAIL:", email);
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -260,23 +290,63 @@ exports.verifyOTP = async (req, res) => {
     }
 
     // ✅ Verify user
-    user.isVerified = true;
+    user.isEmailVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
 
     await user.save();
 
-    res.json({
-      success: true,
+    res.status(200).json({
+      status: 'success',
       message: "Email verified successfully"
     });
 
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      status: 'fail',
+      message: error.message
+    });
   }
 };
 
+// Verify email
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.query; // ✅ FIX
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      verificationTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid or expired token'
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Email verified successfully'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 // Forgot password
@@ -385,7 +455,14 @@ exports.updateMe = async (req, res, next) => {
 
     // Filter out unwanted fields
     const filteredBody = {};
-    const allowedFields = ['firstName', 'lastName', 'phone', 'preferences'];
+    const allowedFields = [
+  'firstName',
+  'lastName',
+  'phone',
+  'email',        // ✅ ADD
+  'addresses',    // ✅ ADD
+  'preferences'
+];
     
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
@@ -492,6 +569,6 @@ exports.refreshToken = async (req, res, next) => {
 };
 
 // Remove the old module.exports = { ... } block and just use:
-module.exports = exports;
+// module.exports = exports;
 // Alternative approach - use exports object directly
 // module.exports = exports;

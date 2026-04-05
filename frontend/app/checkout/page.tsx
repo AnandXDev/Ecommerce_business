@@ -23,7 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import axios from "axios";
-import Cookies from "js-cookie";
+// import Cookies from "js-cookie";
 
 interface ShippingInfo {
   fullName: string;
@@ -55,6 +55,11 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
+    // 🔥 ADD THIS HERE
+  const saved = sessionStorage.getItem("shippingInfo");
+  if (saved) {
+    setShippingInfo(JSON.parse(saved));
+  }
     // Check for Buy Now temporary data
     const tempCheckoutData = sessionStorage.getItem("tempCheckout");
 
@@ -208,9 +213,13 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      const token = Cookies.get("jwt");
-      if (!token) throw new Error("Not authenticated");
+      const token = localStorage.getItem("token");
 
+      if (!token) {
+        toast.error("Please login first");
+        router.push("/login");
+        return;
+      }
       const orderPayload = buildOrderPayload();
 
       const razorpayRes = await axios.post(
@@ -224,13 +233,14 @@ export default function CheckoutPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const rzpOrder = razorpayRes.data.data;
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_SUdiyiqCREmU8k",
+        key:
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_SUdiyiqCREmU8k",
         amount: rzpOrder.amount,
         currency: rzpOrder.currency,
         name: "LuxeCart",
@@ -245,7 +255,7 @@ export default function CheckoutPage() {
         handler: async (response: any) => {
           try {
             console.log("🔹 Razorpay response:", response);
-            
+
             const verifyRes = await axios.post(
               "http://localhost:5000/api/payments/verify",
               {
@@ -259,7 +269,7 @@ export default function CheckoutPage() {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
                 },
-              }
+              },
             );
 
             console.log("🔹 Verification response:", verifyRes.data);
@@ -270,12 +280,17 @@ export default function CheckoutPage() {
               await refreshOrders();
               router.push("/order-success");
             } else {
-              throw new Error(verifyRes.data.message || "Payment verification failed");
+              throw new Error(
+                verifyRes.data.message || "Payment verification failed",
+              );
             }
           } catch (err: any) {
             console.error("🔥 Verification failed:", err);
             console.error("🔥 Error response:", err.response?.data);
-            toast.error(err.response?.data?.message || "Payment verification failed. Please contact support.");
+            toast.error(
+              err.response?.data?.message ||
+                "Payment verification failed. Please contact support.",
+            );
           } finally {
             setIsProcessing(false);
           }
@@ -292,7 +307,9 @@ export default function CheckoutPage() {
       rzp.open();
     } catch (error: any) {
       console.error("FULL ERROR:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to initiate checkout");
+      toast.error(
+        error.response?.data?.message || "Failed to initiate checkout",
+      );
       setIsProcessing(false);
     }
   };
@@ -312,18 +329,41 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true);
 
-      const token = Cookies.get("jwt");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Please login first");
+        router.push("/login");
+        return;
+      }
+      useEffect(() => {
+        if (!isAuthenticated) {
+          router.replace("/login");
+        }
+      }, [isAuthenticated]);
+      if (!isBuyNowCheckout) {
+        clearCart();
+      }
 
       await axios.post(
-        "http://localhost:5000/api/checkout/validate",
+        "http://localhost:5000/api/orders/cod",
         {
           items: getCurrentItems().map((item) => ({
-            product: item.productId || item.id,
+            product: item.productId || item.id || item._id,
+            name: item.name,
+            image: item.images?.[0]?.url,
             variant: item.variant || {},
             quantity: item.quantity,
             price: item.price,
           })),
-          shippingAddress: shippingInfo,
+          shippingAddress: {
+            fullName: shippingInfo.fullName,
+            phone: shippingInfo.phone,
+            address: shippingInfo.address,
+            city: shippingInfo.city,
+            state: shippingInfo.state,
+            pincode: shippingInfo.zipCode,
+          },
           paymentMethod: "COD",
           paymentStatus: "pending",
           totalAmount: calculateTotal(),
@@ -336,15 +376,22 @@ export default function CheckoutPage() {
       toast.success("Order placed with COD!");
       clearCart();
       router.push("/order-success");
-    } catch (err) {
-      toast.error("COD failed");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "COD failed");
     } finally {
       setIsProcessing(false);
     }
   };
   const handleQRPayment = async () => {
     try {
-      const token = Cookies.get("jwt");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Please login first");
+        router.push("/login");
+        return;
+      }
 
       const res = await axios.post(
         "http://localhost:5000/api/payment/qr",
@@ -368,7 +415,7 @@ export default function CheckoutPage() {
     }).format(price);
   };
 
-  if (cart.items.length === 0) {
+  if (!isBuyNowCheckout && cart.items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -436,6 +483,7 @@ export default function CheckoutPage() {
                         <Image
                           src={item.images[0].url}
                           alt={item.images[0].alt}
+                          loading="lazy"
                           fill
                           className="object-cover"
                           sizes="80px"
@@ -777,7 +825,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Load Razorpay Script */}
-      <script src="https://checkout.razorpay.com/v1/checkout.js" async />
+      {/* <script src="https://checkout.razorpay.com/v1/checkout.js" async /> */}
     </motion.div>
   );
 }

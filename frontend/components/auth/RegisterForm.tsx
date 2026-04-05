@@ -79,11 +79,17 @@ export function RegisterForm() {
     const response = await registerUser(registrationData);
 
     if (response.status === 'success') {
-      router.push(`/verify-email?email=${data.email}`);
+      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
     }
-  } catch (error) {
-    console.error(error);
-  } finally {
+  } catch (error: any) {
+  console.error(error);
+
+  alert(
+    error?.message ||
+    error?.response?.data?.message ||
+    "Registration failed"
+  );
+} finally {
     setIsLoading(false);
   }
 };

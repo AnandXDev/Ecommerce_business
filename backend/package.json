@@ -16,6 +16,7 @@
     "backup": "node scripts/backup.js"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@react-oauth/google": "^0.13.4",
     "axios": "^1.7.2",
     "bcrypt": "^6.0.0",

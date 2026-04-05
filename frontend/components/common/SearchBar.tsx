@@ -137,7 +137,7 @@ export function SearchBar({
       localStorage.setItem('recentSearches', JSON.stringify(updatedRecent));
       
       // Navigate to search results
-      router.push(`/search?q=${encodeURIComponent(finalQuery)}`);
+      router.push(`/products?q=${encodeURIComponent(finalQuery)}`);
       
       // Close search bar if onClose is provided
       if (onClose) {
@@ -183,7 +183,7 @@ export function SearchBar({
             setQuery(e.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => setIsOpen(false)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               handleSearch();

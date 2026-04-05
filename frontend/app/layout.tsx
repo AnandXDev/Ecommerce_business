@@ -1,6 +1,7 @@
 
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { AuthProvider } from '@/hooks/useAuth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -10,8 +11,11 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster, ToasterProvider } from '@/components/ui/toaster';
 import { Toaster as HotToaster } from 'react-hot-toast';
+import { CountryProvider } from './context/countryContext';
+import TargetCursor from "@/components/TargetCursor"
 
 import './globals.css';
+import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -69,13 +73,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", GeistSans.variable)}>
       <body className={inter.className}>
+          <TargetCursor hideDefaultCursor={false}  />
         <ThemeProvider>
           <AuthProvider>
             <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '639143056121-0t0dm3ncekhr21k74s1oes9h48cnq5ge.apps.googleusercontent.com'}>
             <DataProvider>
               <CartProvider>
+              <CountryProvider>
                 <ToasterProvider>
                   <div className="min-h-screen flex flex-col">
                     <Header />
@@ -110,6 +116,7 @@ export default function RootLayout({
                   }}
                 />
               </ToasterProvider>
+              </CountryProvider>
             </CartProvider>
           </DataProvider>
           </GoogleOAuthProvider>

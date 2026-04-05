@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { FilterSidebar } from "@/components/product/FilterSidebar";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { useMemo } from "react";
 import { Loading } from "@/components/ui/Loading";
 import { useProducts, useCategories } from "@/hooks/useData";
 import { Filter, X, Grid, List } from "lucide-react";
@@ -55,13 +56,15 @@ type Category = {
   createdAt: string;
   updatedAt: string;
   productCount: number;
-}
+};
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q")?.toLowerCase() || "";
   const initialCategory = searchParams.get("category");
-  const [tempPriceRange, setTempPriceRange] = useState<[number, number]>([0, 1000]);
-  
+  const [tempPriceRange, setTempPriceRange] = useState<[number, number]>([
+    0, 1000,
+  ]);
 
   const [filters, setFilters] = useState<FilterType>({
     category: initialCategory || "",
@@ -71,14 +74,14 @@ export default function ProductsPage() {
     brand: "",
   });
 
-  useEffect(() => {
-    const category = searchParams.get("category");
+ const categoryParam = searchParams.get("category");
 
-    setFilters((prev) => ({
-      ...prev,
-      category: category || "",
-    }));
-  }, [searchParams.get("category")]);
+useEffect(() => {
+  setFilters((prev) => ({
+    ...prev,
+    category: categoryParam || "",
+  }));
+}, [categoryParam]);
 
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -147,7 +150,117 @@ export default function ProductsPage() {
     },
   };
 
-  if (loading && products.length === 0) {
+  
+
+  const sortOptions = [
+    { label: "Featured", value: "featured" },
+    { label: "Price: Low to High", value: "price-low-high" },
+    { label: "Price: High to Low", value: "price-high-low" },
+    { label: "Highest Rated", value: "rating" },
+    { label: "Newest First", value: "newest" },
+    { label: "Name: A-Z", value: "name" },
+  ];
+
+  const applyPrice = () => {
+    setFilters((prev) => ({
+      ...prev,
+      priceRange: tempPriceRange,
+    }));
+  };
+  
+const searchWords = useMemo(() => searchQuery.split(" "), [searchQuery]);
+
+const filteredProducts = useMemo(() => {
+  return products
+    .filter((product) => {
+      const productCategory =
+        product.categorySlug ||
+        (typeof product.category === "object"
+          ? product.category?.slug
+          : product.category) ||
+        "";
+
+      // Category filter
+      if (filters.category && productCategory !== filters.category) {
+        return false;
+      }
+
+      // Price filter
+      const price = product.pricing?.basePrice || 0;
+      if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
+        return false;
+      }
+
+      // SEARCH LOGIC
+      const name = product?.name?.toLowerCase() || "";
+      const brand = (
+        typeof product?.brand === "object"
+          ? product?.brand?.name
+          : product?.brand || ""
+      ).toLowerCase();
+
+      const tags = Array.isArray(product?.tags)
+        ? product.tags.join(" ").toLowerCase()
+        : "";
+
+      const category = productCategory.toLowerCase();
+
+      if (searchQuery) {
+        const matches = searchWords.every(
+          (word) =>
+            name.includes(word) ||
+            brand.includes(word) ||
+            tags.includes(word) ||
+            category.includes(word)
+        );
+
+        if (!matches) return false;
+      }
+
+      // Rating
+      if (filters.rating && (product.rating?.average || 0) < filters.rating) {
+        return false;
+      }
+
+      // Brand
+      const productBrand =
+        product.brand?.name?.toLowerCase() ||
+        product.brand?.toLowerCase() ||
+        "";
+
+      if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      switch (filters.sortBy) {
+        case "price-low-high":
+          return (a.pricing?.basePrice || 0) - (b.pricing?.basePrice || 0);
+
+        case "price-high-low":
+          return (b.pricing?.basePrice || 0) - (a.pricing?.basePrice || 0);
+
+        case "rating":
+          return (b.rating?.average || 0) - (a.rating?.average || 0);
+
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+          );
+
+        case "name":
+          return a.name.localeCompare(b.name);
+
+        default:
+          return 0;
+      }
+    });
+}, [products, filters, searchQuery, searchWords]);
+
+if (loading && products.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container-custom py-8">
@@ -176,83 +289,6 @@ export default function ProductsPage() {
     );
   }
 
-  const sortOptions = [
-    { label: "Featured", value: "featured" },
-    { label: "Price: Low to High", value: "price-low-high" },
-    { label: "Price: High to Low", value: "price-high-low" },
-    { label: "Highest Rated", value: "rating" },
-    { label: "Newest First", value: "newest" },
-    { label: "Name: A-Z", value: "name" },
-  ];
-
-  const applyPrice = () => {
-    setFilters((prev) => ({
-      ...prev,
-      priceRange: tempPriceRange,
-    }));
-  };
-  const filteredProducts = products
-    .filter((product) => {
-      const productCategory =
-        product.categorySlug ||
-        (typeof product.category === "object"
-          ? product.category?.slug
-          : product.category) ||
-        "";
-
-      // Category
-      if (filters.category && productCategory !== filters.category) {
-        return false;
-      }
-
-      // Price
-      if (
-        (product.pricing.basePrice || 0) < filters.priceRange[0] ||
-        (product.pricing.basePrice || 0) > filters.priceRange[1]
-      ) {
-        return false;
-      }
-
-      // Rating
-
-      if (filters.rating && (product.rating?.average || 0) < filters.rating) {
-        return false;
-      }
-      // Brand
-      const productBrand =
-        product.brand?.name?.toLowerCase() ||
-        product.brand?.toLowerCase() ||
-        "";
-
-      if (filters.brand && productBrand !== filters.brand.toLowerCase()) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      switch (filters.sortBy) {
-        case "price-low-high":
-          return a.pricing.basePrice - b.pricing.basePrice;
-
-        case "price-high-low":
-          return b.pricing.basePrice - a.pricing.basePrice;
-
-        case "rating":
-          return (b.rating?.average || 0) - (a.rating?.average || 0);
-
-        case "newest":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-
-        case "name":
-          return a.name.localeCompare(b.name);
-
-        default:
-          return 0; // featured (default order)
-      }
-    });
   return (
     <motion.div
       variants={containerVariants}
@@ -306,7 +342,7 @@ export default function ProductsPage() {
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 mr-2">
-                {filteredProducts.length} products found
+                {filteredProducts.length } products found
               </span>
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
@@ -400,7 +436,7 @@ export default function ProductsPage() {
                     : "space-y-4"
                 }
               >
-                {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product,index) => (
                   <motion.div
                     key={product._id}
                     variants={itemVariants}

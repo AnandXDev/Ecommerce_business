@@ -3,7 +3,6 @@ const router = express.Router();
 
 // Import controllers
 const authController = require('../controllers/authController');
-const { sendOTP, verifyOTP } = require('../controllers/authController');
 
 // Import validation
 const {
@@ -17,16 +16,16 @@ const {
 
 // Import middleware
 const { protect, verifyEmailToken, verifyResetToken } = require('../middleware/auth');
+// const validate = require('../middleware/validate');
 
 // Public routes
 router.post('/register', registerValidator, authController.signup);
 router.post('/login', loginValidator, authController.login);
 router.post('/logout', authController.logout);
-router.get('/verify-email/', authController.verifyEmail);
-router.post('/send-otp', sendOTP);
-router.post('/verify-otp', verifyOTP);
-// router.post('/google-login', authController.googleLogin);
-// router.post('/google', authController.googleAuth);
+router.post('/google', authController.googleAuth);
+router.get('/verify-email', authController.verifyEmail);
+router.post('/send-otp', authController.sendOTP);
+router.post('/verify-otp', authController.verifyOTP);
 // router.post('/forgot-password', forgotPasswordValidator, authController.forgotPassword);
 // router.patch('/reset-password/:token', resetPasswordValidator, authController.resetPassword);
 // router.get('/verify-email/:token', verifyEmailToken, authController.verifyEmail);

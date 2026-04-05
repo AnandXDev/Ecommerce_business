@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import axios from "axios";
 
+
 // Types
 interface User {
   _id: string;
@@ -183,6 +184,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await axios.post(`${API_URL}/api/auth/login`, {
         email,
         password,
+        bahvior: "cookie", // ✅ This is not a real axios option, just for clarity
+        
+      },
+    {
+        withCredentials: true, // ✅ IMPORTANT
       });
 
       if (response.data.status === "success") {
@@ -191,11 +197,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("token", response.data.token);
         router.push("/");
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Login failed";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
+} catch (error: any) {
+  console.error("LOGIN ERROR:", error);
+  const errorMessage =
+    error?.response?.data?.message || error?.message || "Login failed";
+  setError(errorMessage);
+  throw new Error(errorMessage);
+}
+    
+    finally {
       setLoading(false);
     }
   };
@@ -217,7 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRegistrationSuccess(true);
 
         
-        router.push("/verify-email");
+       router.push(`/verify-email?email=${userData.email}`);
       }
        return response.data; // ✅ THIS LINE IS MISSING
     } catch (error: any) {
@@ -231,7 +241,7 @@ console.log("ERROR DATA:", error?.response?.data);
         "Registration failed";
 
       setError(errorMessage);
-      return null;
+       throw new Error(errorMessage); // ✅ NEVER return null
     } finally {
       setLoading(false);
     }
@@ -277,19 +287,22 @@ console.log("ERROR DATA:", error?.response?.data);
 
  const logout = async () => {
   await axios.post('/api/auth/logout', {
-    withCredentials: true   // 👈 important
+    withCredentials: true  , // 👈 important
+  
   });
 
   localStorage.removeItem('token');
   setUser(null);
+  router.push('/login');
 };
 
   const updateProfile = async (userData: Partial<User>) => {
     try {
+      
       setLoading(true);
       setError(null);
 
-      const token = Cookies.get("jwt");
+      const token = localStorage.getItem("token");
       if (!token) throw new Error("Not authenticated");
 
       const response = await axios.patch(
@@ -320,7 +333,7 @@ console.log("ERROR DATA:", error?.response?.data);
       setLoading(true);
       setError(null);
 
-      const token = Cookies.get("jwt");
+      const token = localStorage.getItem("token");
       if (!token) throw new Error("Not authenticated");
 
       const response = await axios.patch(

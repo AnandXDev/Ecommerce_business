@@ -41,7 +41,8 @@ router.post('/:slug/reviews', reviewValidator, productController.addProductRevie
 router.use(restrictTo('admin')); // All routes below this require admin role
 
 router.post('/', createProductValidator, productController.createProduct);
-router.patch('/:id', updateProductValidator, productController.updateProduct);
-router.delete('/:id', productController.deleteProduct);
+router.get('/admin/:id', productController.getProductById);
+router.patch('/admin/:id', updateProductValidator, productController.updateProduct);
+router.delete('/admin/:id', productController.deleteProduct);
 
 module.exports = router;
