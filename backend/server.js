@@ -123,7 +123,7 @@ app.use(notFound);
 // Database connection
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dropship_ecommerce', {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://Anand:Anand967141@cluster0.whni8gd.mongodb.net/ecommerce_businness?retryWrites=true&w=majority&appName=Cluster0', {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,

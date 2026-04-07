@@ -269,9 +269,9 @@ userSchema.virtual("orderHistory", {
 });
 
 // Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ googleId: 1 });
-userSchema.index({ createdAt: -1 });
+// userSchema.index({ email: 1 });
+// userSchema.index({ googleId: 1 });
+// userSchema.index({ createdAt: -1 });
 
 // Pre-save middleware to hash password
 userSchema.pre("save", async function (next) {
