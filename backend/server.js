@@ -91,6 +91,10 @@ const limiter = rateLimit({
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
