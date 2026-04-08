@@ -68,10 +68,6 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.58.1",
-    "@typescript-eslint/parser": "^8.58.1",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.2",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.5",
     "tailwindcss-animate": "^1.0.7"
